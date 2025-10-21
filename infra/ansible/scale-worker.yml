@@ -1,0 +1,16 @@
+---
+- name: Add new worker nodes to RKE2 cluster
+  hosts: new_worker
+  become: yes
+  vars:
+    master_ip: "{{ hostvars[groups['master'][0]]['ansible_host'] }}"
+    join_token: "{{ lookup('file', './rke2_token.txt') }}"
+  tasks:
+    - name: Install RKE2 agent on new workers
+      shell: |
+        curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE="agent" sh -
+        mkdir -p /etc/rancher/rke2
+        echo "server: https://{{ master_ip }}:9345" > /etc/rancher/rke2/config.yaml
+        echo "token: {{ join_token }}" >> /etc/rancher/rke2/config.yaml
+        systemctl enable rke2-agent.service
+        systemctl start rke2-agent.service

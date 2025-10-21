@@ -1,0 +1,15 @@
+---
+- name: Remove worker nodes from RKE2 cluster
+  hosts: master
+  become: yes
+  vars:
+    nodes_to_remove:
+      - rke2-worker-3
+      - rke2-worker-4
+  tasks:
+    - name: Remove nodes from cluster
+      shell: |
+        for node in {{ nodes_to_remove | join(' ') }}; do
+          echo "Removing node $node ..."
+          /var/lib/rancher/rke2/bin/kubectl delete node $node --ignore-not-found=true || true
+        done

@@ -1,0 +1,16 @@
+cluster_name: devops-rke2-demo
+provider: gcp           # aws | gcp | local
+region: asia-southeast1
+ssh_key_path: ~/.ssh/id_rsa.pub
+
+master:
+  count: 1
+  instance_type: e2-medium
+
+worker:
+  count: 2
+  instance_type: e2-small
+
+rke2:
+  version: v1.30.0
+  token: devops-intern-token
