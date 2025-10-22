@@ -1,12 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export ANSIBLE_HOST_KEY_CHECKING=False
+cd "$(dirname "$0")"
 
-cd "$(dirname "$0")/../infra/terraform"
+source ./parse-config.sh
+cd ../infra/terraform
 
-echo "=== [1/3] Terraform apply ==="
+echo "🚀 Starting Terraform apply..."
 terraform init -input=false
-terraform apply -auto-approve
+terraform apply -auto-approve \
+  -var="cloud_provider=$PROVIDER" \
+  -var="project_id=$PROJECT_ID" \
+  -var="region=$REGION" \
+  -var="master_count=$MASTER_COUNT" \
+  -var="worker_count=$WORKER_COUNT" \
+  -var="master_instance=$MASTER_TYPE" \
+  -var="worker_instance=$WORKER_TYPE" \
+  -var="ssh_key_path=$SSH_KEY_PATH" \
+  -var="aws_profile=$AWS_PROFILE"
+
 
 MASTER_IP=$(terraform output -json master_ips | jq -r '.[0]')
 WORKER_IPS=$(terraform output -json worker_ips | jq -r '.[]')
@@ -20,8 +31,5 @@ for ip in $WORKER_IPS; do
   echo "${ip} ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_ed25519" >> inventory.ini
 done
 
-echo "=== [2/3] Ansible setup ==="
 ansible-playbook -i inventory.ini setup-rke2.yml
-
-echo "=== [3/3] Verification ==="
 ssh -i ~/.ssh/id_ed25519 ubuntu@$MASTER_IP "sudo KUBECONFIG=/etc/rancher/rke2/rke2.yaml kubectl get nodes -o wide"
