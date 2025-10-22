@@ -1,7 +1,8 @@
 cluster_name: devops-rke2-demo
-provider: gcp           # aws | gcp | local
-region: asia-southeast1
-ssh_key_path: ~/.ssh/id_rsa.pub
+provider: gcp         # gcp | aws | local | azure
+project_id: devops-workspace-469715
+region: us-central1
+ssh_key_path: ~/.ssh/id_ed25519.pub
 
 master:
   count: 1

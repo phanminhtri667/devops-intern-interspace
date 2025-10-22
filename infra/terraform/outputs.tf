@@ -1,9 +1,17 @@
 output "master_ips" {
   description = "Public IPs of master nodes"
-  value       = google_compute_instance.master[*].network_interface[0].access_config[0].nat_ip
+  value = flatten([
+    module.gcp_infra[*].master_ips,
+    module.aws_infra[*].master_ips,
+    module.azure_infra[*].master_ips
+  ])
 }
 
 output "worker_ips" {
   description = "Public IPs of worker nodes"
-  value       = google_compute_instance.worker[*].network_interface[0].access_config[0].nat_ip
+  value = flatten([
+    module.gcp_infra[*].worker_ips,
+    module.aws_infra[*].worker_ips,
+    module.azure_infra[*].worker_ips
+  ])
 }

@@ -1,0 +1,30 @@
+.
+├── config
+│   └── cluster-config.yaml
+├── infra
+│   ├── ansible
+│   │   ├── ansible.cfg
+│   │   ├── inventory.ini
+│   │   ├── remove-worker.yml
+│   │   ├── scale-worker.yml
+│   │   └── setup-rke2.yml
+│   └── terraform
+│       ├── aws
+│       │   ├── compute.tf
+│       │   └── network.tf
+│       ├── azure
+│       ├── gcp
+│       │   ├── compute.tf
+│       │   └── network.tf
+│       ├── main.tf
+│       ├── outputs.tf
+│       ├── provider.tf
+│       └── variables.tf
+├── README.md
+├── scripts
+│   ├── cleanup.sh
+│   ├── parse-config.sh
+│   └── run.sh
+└── tree.txt
+
+8 directories, 19 files
