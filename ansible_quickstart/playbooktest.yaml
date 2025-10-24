@@ -24,7 +24,7 @@
 
     - name: Compose myday message
       ansible.builtin.set_fact:
-        myday_content: "hôm nay là sinh nhật của {{ phantri_text }}"
+        myday_content: "tôi tên là {{ phantri_text }}"
 
     - name: Create myday.txt with composed content
       ansible.builtin.copy:
