@@ -1,0 +1,35 @@
+---
+- hosts: gcp_tri
+  become: yes
+
+  vars:
+    domain_name: "gcp-demo.com"
+    index_file: "index.html"
+
+  tasks:
+    - name: Install Apache and MySQL (Ubuntu)
+      apt:
+        name: "{{ item }}"
+        state: present   
+        # state: latest   
+        # state: absent 
+      loop:
+        - apache2
+        - mysql-server
+        - php
+        - php-mysql
+
+    - name: Deploy HTML file
+      template:
+        src: ./index.html
+        dest: /var/www/html/index.html
+      notify: restart web
+
+  handlers:
+    - name: restart web
+      service:
+        name: "{{ item }}"
+        state: restarted
+      loop:
+        - apache2
+        - mysql

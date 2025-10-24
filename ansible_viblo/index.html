@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Hello from Ansible</title>
+    <meta charset="UTF-8">
+    <title>{{ domain_name }}</title>
   </head>
   <body>
-    <h1>Website này được deploy bằng Ansible!</h1>
+    <h1>Website của {{ domain_name }}</h1>
+    <p>FILE_NAME: {{ index_file }}</p>
   </body>
 </html>
+
