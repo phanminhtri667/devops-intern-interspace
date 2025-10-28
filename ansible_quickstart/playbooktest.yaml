@@ -1,0 +1,39 @@
+# playbook_files.yml
+- name: Demo create & compose files
+  hosts: gcp_tri
+  become: false   # dùng /tmp nên không cần sudo; đổi true nếu muốn ghi nơi khác
+  vars:
+    phantri_path: /tmp/phantri.txt
+    myday_path:   /tmp/myday.txt
+
+  tasks:
+    - name: Create phantri.txt with content
+      ansible.builtin.copy:
+        dest: "{{ phantri_path }}"
+        content: "Phan Minh Trí\n"
+        mode: "0644"
+
+    - name: Read phantri.txt content (remote)
+      ansible.builtin.slurp:
+        src: "{{ phantri_path }}"
+      register: phantri_raw
+
+    - name: Decode content to plain text
+      ansible.builtin.set_fact:
+        phantri_text: "{{ phantri_raw.content | b64decode | trim }}"
+
+    - name: Compose myday message
+      ansible.builtin.set_fact:
+        myday_content: "tôi tên là {{ phantri_text }}"
+
+    - name: Create myday.txt with composed content
+      ansible.builtin.copy:
+        dest: "{{ myday_path }}"
+        content: "{{ myday_content }}\n"
+        mode: "0644"
+
+    - name: Print filenames and myday content
+      ansible.builtin.debug:
+        msg:
+          - "Đã tạo file: {{ phantri_path }} và {{ myday_path }}"
+          - "Nội dung myday.txt: {{ myday_content }}"

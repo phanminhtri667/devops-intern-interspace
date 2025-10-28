@@ -1,0 +1,10 @@
+- name: My first play
+  hosts: gcp_tri
+  become: true
+  tasks:
+    - name: Ping my GCP host
+      ansible.builtin.ping:
+
+    - name: Print message
+      ansible.builtin.debug:
+        msg: "Hello from Ansible on GCP!"
