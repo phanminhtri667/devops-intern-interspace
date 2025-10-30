@@ -1,0 +1,8 @@
+---
+- name: restart web
+  service:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - apache2
+    - mysql

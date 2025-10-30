@@ -1,0 +1,5 @@
+---
+- hosts: gcp_tri
+  become: yes
+  roles:
+    - apache_mysql

@@ -1,0 +1,17 @@
+---
+- name: Cài Apache và MySQL (Ubuntu)
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  loop:
+    - apache2
+    - mysql-server
+    - php
+    - php-mysql
+
+- name: Triển khai file HTML
+  template:
+    src: index.html.j2
+    dest: /var/www/html/index.html
+  notify: restart web
