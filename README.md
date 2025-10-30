@@ -56,4 +56,4 @@ Hoàn thành chuỗi hướng dẫn “Terraform Getting Started on GCP” từ 
 
 Terraform Official Docs — GCP Get Started
 
-Terraform Registry: Google Provider
+Terraform Registry: Google Provider:
