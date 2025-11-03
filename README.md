@@ -154,3 +154,14 @@ Terraform → Ansible → Verify Cluster
 Phan Minh Trí – DevOps Intern
 GitHub: phanminhtri667
 
+
+BÀI TOÁN : 
+
+thiết kế 1 quy trình devops !
+
+provision  1 cụm k8s 
+terraform dùng để làm gì ? -> tạo vpc, vm, network  ( input là gì ? output là gì ? (ip các vm))
+ansible dùng để làm gì ? -> cấu hình cài đặt các phần mềm...(input là gì ?(output   từ   terraform ), output là gì ?.....)
+Reverse proxy là gì ? ( upstrem, listen, ... -những cái quan trọng ?)
+
+đặt vấn đề -> cách giải quyết -> vì sao lại dùng nó ???????
