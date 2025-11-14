@@ -1,0 +1,107 @@
+########################################
+# GLOBAL IGNORE FOR DEVOPS PROJECTS
+########################################
+
+# ---- GENERAL ----
+*.log
+*.tmp
+*.temp
+*.out
+*.bak
+*.swp
+*.swo
+*~
+
+# ---- OS FILES ----
+.DS_Store
+Thumbs.db
+
+# ---- VSCODE ----
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ---- NPM / NODE ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# ---- PYTHON ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+
+# ---- TERRAFORM ----
+**/.terraform/
+**/.terraform.lock.hcl
+**/*.tfstate
+**/*.tfstate.*
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# ---- ANSIBLE ----
+*.retry
+*.facts
+ansible.log
+
+# ---- DOCKER ----
+*.pid
+docker-compose.override.yml
+
+# ---- SSH KEYS ----
+*.pem
+*.key
+*.pub
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# ---- SECRETS ----
+.env
+*.secret
+*.credentials
+secrets.yml
+vault_pass.txt
+
+# ---- GITHUB ----
+.github/workflows/*-local.yml
+.github/workflows/*-test.yml
+
+# ---- LOGS / TEMP ----
+logs/
+tmp/
+temp/
+
+# ---- PACKAGING ----
+*.zip
+*.tar.gz
+*.rar
+
+# ---- PROJECT-SPECIFIC IGNORE ----
+ansible-lab-repo/
+omerbsezer_Fast-Terraform/
+
+# ---- BACKUP / CACHE ----
+.cache/
+.idea/
+*.iml
+
+# ---- SYSTEM ----
+nohup.out
+screenlog.*
+
+
+########################################
+# END
+########################################
