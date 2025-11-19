@@ -1,0 +1,37 @@
+.
+├── lab1-terraform-basic
+│   ├── main.tf
+│   ├── outputs.tf
+│   └── variables.tf
+├── lab2-module-gcp
+│   ├── main.tf
+│   ├── modules
+│   │   ├── firewall
+│   │   │   └── main.tf
+│   │   ├── subnet
+│   │   │   └── main.tf
+│   │   ├── vm
+│   │   │   └── main.tf
+│   │   └── vpc
+│   │       └── main.tf
+│   ├── outputs.tf
+│   └── variables.tf
+├── lab3-ansible-basic
+│   ├── inventory.ini
+│   └── playbook.yml
+├── lab4-role-ansible
+│   ├── inventory.ini
+│   ├── playbook.yml
+│   └── roles
+│       ├── common
+│       │   └── tasks
+│       │       └── main.yml
+│       ├── editors
+│       │   └── tasks
+│       │       └── main.yml
+│       └── network-tools
+│           └── tasks
+│               └── main.yml
+└── tree1.txt
+
+16 directories, 18 files

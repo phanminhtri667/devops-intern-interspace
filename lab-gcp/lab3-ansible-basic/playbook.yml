@@ -1,0 +1,21 @@
+- name: Lab3 - Ansible Basic
+  hosts: gcp_tri_lab3
+  become: yes
+  tasks:
+
+    - name: Kiểm tra kết nối
+      ping:
+
+    - name: In hostname
+      command: hostname
+
+    - name: Cài đặt package htop
+      apt:
+        name: htop
+        state: present
+        update_cache: yes
+
+    - name: Tạo file test
+      copy:
+        dest: /home/{{ ansible_user }}/hello.txt
+        content: "Xin chào từ Ansible Lab3!"

@@ -1,0 +1,12 @@
+- name: Update hệ thống
+  apt:
+    update_cache: yes
+    upgrade: yes
+
+- name: Cài đặt cơ bản
+  apt:
+    name:
+      - htop
+      - curl
+      - wget
+    state: present

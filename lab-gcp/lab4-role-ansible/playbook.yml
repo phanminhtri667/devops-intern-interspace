@@ -1,0 +1,20 @@
+- name: Lab4 - Ansible Roles
+  hosts: gcp_tri_lab3
+  become: yes
+
+  roles:
+    - common
+    - network-tools
+    - editors
+
+  tasks:
+    - name: Copy file HTML lên VM
+      copy:
+        src: ./index.html
+        dest: /home/ubuntu/index.html
+
+    - name: Sửa nội dung file đã copy
+      lineinfile:
+        path: /home/ubuntu/index.html
+        regexp: 'abc'
+        line: 'success!'

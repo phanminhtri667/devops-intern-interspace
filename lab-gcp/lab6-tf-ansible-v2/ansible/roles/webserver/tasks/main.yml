@@ -1,0 +1,35 @@
+- name: Update apt
+  apt:
+    update_cache: yes
+
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+
+- name: Install Docker
+  apt:
+    name:
+      - docker.io
+      - docker-compose
+    state: present
+
+- name: Install NodeJS
+  apt:
+    name:
+      - nodejs
+      - npm
+    state: present
+
+- name: Create NodeJS app
+  copy:
+    dest: /var/www/html/index.js
+    content: |
+      const http = require('http');
+      const server = http.createServer((req, res) => {
+        res.end('Hello from NodeJS App!');
+      });
+      server.listen(3000);
+
+- name: Run NodeJS App with PM2
+  command: pm2 start /var/www/html/index.js

@@ -1,0 +1,8 @@
+- name: Cài các công cụ mạng
+  apt:
+    name:
+      - iputils-ping
+      - net-tools
+      - telnet
+    state: present
+    update_cache: yes

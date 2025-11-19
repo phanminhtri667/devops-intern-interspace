@@ -1,0 +1,6 @@
+- name: Cài editor phổ biến
+  apt:
+    name:
+      - nano
+      - vim
+    state: present

@@ -1,0 +1,22 @@
+- name: Install MySQL Server
+  apt:
+    name: mysql-server
+    state: present
+    update_cache: yes
+
+- name: Ensure MySQL is running
+  service:
+    name: mysql
+    state: started
+    enabled: yes
+
+- name: Create demo database
+  mysql_db:
+    name: demo
+
+- name: Create user
+  mysql_user:
+    name: devuser
+    password: "123456"
+    priv: "demo.*:ALL"
+    host: "%"
