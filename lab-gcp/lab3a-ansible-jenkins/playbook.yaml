@@ -42,7 +42,6 @@
         enabled: yes
         state: started
 
-    # ---------- NGINX REVERSE PROXY ----------
     - name: Remove default nginx config
       file:
         path: /etc/nginx/sites-enabled/default
