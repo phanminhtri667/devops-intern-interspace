@@ -69,3 +69,14 @@ resource "google_compute_instance" "db" {
     access_config {}
   }
 }
+resource "null_resource" "run_ansible" {
+  depends_on = [
+    google_compute_instance.web,
+    google_compute_instance.db
+  ]
+
+  provisioner "local-exec" {
+    command = "cd ../ansible && bash run_ansible.sh"
+  }
+}
+

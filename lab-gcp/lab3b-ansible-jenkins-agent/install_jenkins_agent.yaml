@@ -1,0 +1,57 @@
+---
+- name: Install Jenkins Agent (worker node)
+  hosts: lab3a-ansible-agent
+  become: yes
+
+  vars:
+    jenkins_master_url: "http://35.188.91.24"
+    agent_name: "worker2"
+    agent_home: "/home/pmt/jenkins-agent"
+
+  tasks:
+    - name: Install Java (required for Jenkins agent)
+      apt:
+        name: openjdk-17-jdk
+        state: present
+        update_cache: yes
+
+    - name: Create Jenkins agent directory
+      file:
+        path: "{{ agent_home }}"
+        state: directory
+        owner: pmt
+        group: pmt
+        mode: '0755'
+
+    - name: Download agent.jar from Jenkins master
+      get_url:
+        url: "{{ jenkins_master_url }}/jnlpJars/agent.jar"
+        dest: "{{ agent_home }}/agent.jar"
+        mode: '0755'
+      become_user: pmt
+
+    - name: Create Jenkins agent service file
+      copy:
+        dest: /etc/systemd/system/jenkins-agent.service
+        content: |
+          [Unit]
+          Description=Jenkins Agent
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/bin/java -jar {{ agent_home }}/agent.jar -jnlpUrl {{ jenkins_master_url }}/computer/{{ agent_name }}/slave-agent.jnlp -secret @{{ agent_home }}/agent.secret -workDir {{ agent_home }}
+          User=pmt
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+        mode: '0644'
+
+    - name: Reload systemd daemon
+      command: systemctl daemon-reload
+
+    - name: Enable Jenkins Agent service
+      systemd:
+        name: jenkins-agent
+        enabled: yes
+        state: stopped
