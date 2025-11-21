@@ -1,0 +1,112 @@
+---
+- name: Install Jenkins with NGINX Reverse Proxy (HTTP public OK)
+  hosts: lab3a-ansible-jenkins
+  become: yes
+
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Remove default nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Create Jenkins reverse proxy config
+      copy:
+        dest: /etc/nginx/sites-available/jenkins
+        content: |
+          server {
+              listen 80;
+              server_name _;
+
+              location / {
+                  proxy_pass http://127.0.0.1:8080;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+          }
+
+    - name: Enable Jenkins site
+      file:
+        src: /etc/nginx/sites-available/jenkins
+        dest: /etc/nginx/sites-enabled/jenkins
+        state: link
+
+    - name: Validate Nginx config
+      command: nginx -t
+
+    - name: Restart Nginx
+      systemd:
+        name: nginx
+        state: restarted
+        enabled: yes
+
+
+    - name: Install Jenkins dependencies
+      apt:
+        name:
+          - openjdk-17-jdk
+          - gnupg
+          - curl
+        state: present
+
+    - name: Add Jenkins GPG key
+      apt_key:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        state: present
+
+    - name: Add Jenkins repo
+      apt_repository:
+        repo: "deb https://pkg.jenkins.io/debian-stable binary/"
+        state: present
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: yes
+
+
+    - name: Update Jenkins HTTP_PORT
+      lineinfile:
+        path: /etc/default/jenkins
+        regexp: '^HTTP_PORT='
+        line: 'HTTP_PORT=8080'
+
+    - name: Update Jenkins listen address (LOCALHOST ONLY)
+      lineinfile:
+        path: /etc/default/jenkins
+        regexp: '^JENKINS_LISTEN_ADDRESS='
+        line: 'JENKINS_LISTEN_ADDRESS=127.0.0.1'
+
+    - name: Update Jenkins arguments for Jetty12
+      lineinfile:
+        path: /etc/default/jenkins
+        regexp: '^JENKINS_ARGS='
+        line: 'JENKINS_ARGS="--webroot=/var/cache/jenkins/war --httpPort=8080 --httpListenAddress=127.0.0.1"'
+
+    - name: Restart Jenkins
+      systemd:
+        name: jenkins
+        state: restarted
+        enabled: yes
+
+    - name: Wait for Jenkins password
+      wait_for:
+        path: /var/lib/jenkins/secrets/initialAdminPassword
+        state: present
+        timeout: 60
+
+    - name: Read Jenkins password
+      command: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: adminpass
+
+    - name: Show admin password
+      debug:
+        msg: "Jenkins admin password: {{ adminpass.stdout }}"
