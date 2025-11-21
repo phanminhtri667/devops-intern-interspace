@@ -1,0 +1,77 @@
+---
+- name: Install Jenkins Master (HTTP only)
+  hosts: lab3a-ansible-jenkins
+  become: yes
+
+  vars:
+    jenkins_http_port: 8080
+    jenkins_listen_address: "0.0.0.0"
+    jenkins_url: "http://{{ ansible_host }}:{{ jenkins_http_port }}/"
+
+  tasks:
+    - name: Install dependencies
+      apt:
+        name:
+          - openjdk-17-jdk
+          - curl
+          - gnupg
+        state: present
+        update_cache: yes
+
+    - name: Add Jenkins GPG key
+      shell: |
+        curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key \
+        | gpg --dearmor -o /usr/share/keyrings/jenkins.gpg
+      args:
+        creates: /usr/share/keyrings/jenkins.gpg
+
+    - name: Add Jenkins repository
+      copy:
+        dest: /etc/apt/sources.list.d/jenkins.list
+        content: "deb [signed-by=/usr/share/keyrings/jenkins.gpg] https://pkg.jenkins.io/debian-stable binary/"
+      notify: update apt cache
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+        update_cache: yes
+
+    - name: Configure Jenkins to always run on HTTP {{ jenkins_http_port }}
+      lineinfile:
+        path: /etc/default/jenkins
+        regexp: '^HTTP_PORT='
+        line: 'HTTP_PORT={{ jenkins_http_port }}'
+
+    - name: Set Jenkins listen address (0.0.0.0)
+      lineinfile:
+        path: /etc/default/jenkins
+        regexp: '^JENKINS_LISTEN_ADDRESS='
+        line: 'JENKINS_LISTEN_ADDRESS={{ jenkins_listen_address }}'
+        create: yes
+
+    - name: Ensure Jenkins service is enabled & restarted
+      service:
+        name: jenkins
+        enabled: yes
+        state: restarted
+
+    - name: Wait for Jenkins to generate initial admin password
+      wait_for:
+        path: /var/lib/jenkins/secrets/initialAdminPassword
+        state: present
+        timeout: 60
+
+    - name: Read Jenkins initial admin password
+      slurp:
+        src: /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_password_file
+
+    - name: Print Jenkins initial admin password
+      debug:
+        msg: "Initial Jenkins Admin Password: {{ jenkins_password_file['content'] | b64decode }}"
+
+  handlers:
+    - name: update apt cache
+      apt:
+        update_cache: yes
