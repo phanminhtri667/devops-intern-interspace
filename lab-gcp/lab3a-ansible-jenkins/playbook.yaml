@@ -1,122 +1,115 @@
 ---
-- name: Install Jenkins Master + Nginx Reverse Proxy
+- name: Nginx Reverse Proxy và Jenkins
   hosts: lab3a-ansible-jenkins
   become: yes
-
-  vars:
-    jenkins_url: "http://{{ inventory_hostname }}/"
-
   tasks:
-    - name: Install dependencies
+    - name: Cập nhật hệ thống
+      apt:
+        update_cache: yes
+
+    - name: Cài đặt OpenJDK 21
       apt:
         name:
-          - openjdk-17-jdk
-          - curl
-        state: present
-        update_cache: yes
-
-    - name: Add Jenkins key
-      ansible.builtin.get_url:
-        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-        dest: /usr/share/keyrings/jenkins-keyring.asc
-        mode: '0644'
-
-    - name: Add Jenkins repository
-      copy:
-        dest: /etc/apt/sources.list.d/jenkins.list
-        content: |
-          deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/
-
-    - name: Update apt cache
-      apt:
-        update_cache: yes
-
-    - name: Install Jenkins
-      apt:
-        name: jenkins
+          - openjdk-21-jre
+          - fontconfig
         state: present
 
-    - name: Ensure Jenkins is enabled and running
-      systemd:
-        name: jenkins
-        state: started
-        enabled: yes
+    - name: Kiểm tra phiên bản Java
+      command: java -version
+      register: java_version
+      ignore_errors: yes
 
-    - name: Install Nginx
+    - name: In phiên bản Java ra màn hình
+      debug:
+        msg: "Java version: {{ java_version.stderr }}"
+
+    - name: Cài đặt Nginx
       apt:
         name: nginx
         state: present
 
-    - name: Remove default nginx site
-      file:
-        path: /etc/nginx/sites-enabled/default
-        state: absent
+    - name: Khởi động và kích hoạt Nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
 
-    - name: Create Jenkins Reverse Proxy configuration
+    - name: Cấu hình reverse proxy cho Jenkins
       copy:
         dest: /etc/nginx/sites-available/jenkins
         content: |
           server {
-              listen 80;
+              listen 80 default_server;
               server_name _;
 
               location / {
                   proxy_pass http://127.0.0.1:8080;
 
-                  proxy_set_header Host localhost;
+                  # Required by Jenkins (Jetty 12+)
+                  proxy_set_header Host $host;
                   proxy_set_header X-Real-IP $remote_addr;
-                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                  proxy_set_header X-Forwarded-Proto $scheme;
 
-                  proxy_read_timeout 90;
+                  # MUST HAVE — otherwise Jenkins returns 403
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Host $host;
+                  proxy_set_header X-Forwarded-Proto http;
+                  proxy_set_header X-Forwarded-Port 80;
+
+                  # Prevent redirect issues
+                  proxy_redirect off;
+
+                  # Needed for long sessions / SSE
+                  proxy_http_version 1.1;
+                  proxy_request_buffering off;
+                  proxy_buffering off;
               }
           }
-        mode: '0644'
 
-    - name: Enable Jenkins Nginx site
+
+    - name: Kích hoạt cấu hình Nginx cho Jenkins
       file:
         src: /etc/nginx/sites-available/jenkins
         dest: /etc/nginx/sites-enabled/jenkins
         state: link
 
-    - name: Test Nginx config
+    - name: Kiểm tra cấu hình Nginx
       command: nginx -t
-      register: nginx_test
-      failed_when: "'successful' not in nginx_test.stderr"
 
-    - name: Restart Nginx
+    - name: Tải lại Nginx
       systemd:
         name: nginx
-        state: restarted
+        state: reloaded
 
-    - name: Set Jenkins root URL
-      copy:
-        dest: /var/lib/jenkins/jenkins.model.JenkinsLocationConfiguration.xml
-        content: |
-          <?xml version='1.1' encoding='UTF-8'?>
-          <jenkins.model.JenkinsLocationConfiguration>
-            <adminAddress>admin@local</adminAddress>
-            <jenkinsUrl>{{ jenkins_url }}</jenkinsUrl>
-          </jenkins.model.JenkinsLocationConfiguration>
-        owner: jenkins
-        group: jenkins
-        mode: '0644'
+    - name: Thêm kho Jenkins vào apt repository
+      apt_key:
+        url: https://pkg.jenkins.io/debian/jenkins.io.key
+        state: present
 
-    - name: Restart Jenkins
+    - name: Thêm Jenkins vào danh sách nguồn apt
+      apt_repository:
+        repo: deb http://pkg.jenkins.io/debian-stable binary/
+        state: present
+
+    - name: Cập nhật apt repository
+      apt:
+        update_cache: yes
+
+    - name: Cài đặt Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    - name: Khởi động và kích hoạt Jenkins
       systemd:
         name: jenkins
-        state: restarted
+        state: started
+        enabled: yes
 
-    - name: Wait for Jenkins password
-      wait_for:
-        path: /var/lib/jenkins/secrets/initialAdminPassword
-        timeout: 30
+    - name: Lấy mật khẩu Jenkins ban đầu
+      command: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_password
 
-    - name: Read Jenkins initial admin password
-      slurp:
-        src: /var/lib/jenkins/secrets/initialAdminPassword
-      register: adminpass
-
-    - name: Show Jenkins Initial Password
+    - name: In mật khẩu Jenkins ban đầu ra màn hình
       debug:
-        msg: "Initial Admin Password: {{ adminpass.content | b64decode }}"
+        msg: "Mật khẩu Jenkins ban đầu: {{ jenkins_password.stdout }}"
+
