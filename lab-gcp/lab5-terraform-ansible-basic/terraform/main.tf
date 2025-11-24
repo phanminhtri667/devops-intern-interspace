@@ -53,6 +53,6 @@ resource "google_compute_instance" "vm" {
   }
 
   metadata = {
-    ssh-keys = "ubuntu:${file("~/.ssh/id_rsa.pub")}"
+    ssh-keys = "ubuntu:${file("/home/pmt/.ssh/id_ed25519.pub")}"
   }
 }

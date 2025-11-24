@@ -1,7 +1,8 @@
 #!/bin/bash
 
-echo "=== 1. Terraform Apply ==="
+echo "=== 1. Terraform Init & Apply ==="
 cd terraform
+terraform init -upgrade
 terraform apply -auto-approve
 
 echo "=== 2. Generate Inventory ==="
