@@ -1,62 +1,115 @@
 ---
-- name: Install Jenkins with Nginx reverse proxy on GCP VM
+- name: Install Jenkins LTS with Nginx reverse proxy (Jetty12-safe)
   hosts: lab3a-ansible-jenkins
   become: yes
-
-  vars:
-    jenkins_http_port: 8080
 
   tasks:
     - name: Update apt cache
       apt:
         update_cache: yes
 
-    - name: Install dependencies
+    - name: Install Java 21 + fontconfig (Jenkins official requirement)
       apt:
         name:
           - fontconfig
-          - openjdk-11-jre
-          - gnupg
-          - nginx
+          - openjdk-21-jre
         state: present
 
-    - name: Add Jenkins repo key
-      apt_key:
+    - name: Check java version
+      command: java -version
+      register: java_version
+      ignore_errors: yes
+
+    - name: Show java version
+      debug:
+        msg: "{{ java_version.stderr }}"
+
+    - name: Create keyring directory (Ubuntu 24+)
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: 0755
+
+    - name: Download Jenkins GPG key (official)
+      get_url:
         url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
-        state: present
+        dest: /etc/apt/keyrings/jenkins.key
+        mode: '0644'
 
-    - name: Add Jenkins repository
-      apt_repository:
-        repo: "deb https://pkg.jenkins.io/debian-stable binary/"
-        state: present
+    - name: Convert GPG key to keyring
+      shell: |
+        gpg --dearmor < /etc/apt/keyrings/jenkins.key > /etc/apt/keyrings/jenkins-keyring.asc
+      args:
+        creates: /etc/apt/keyrings/jenkins-keyring.asc
 
-    - name: Install Jenkins
+    - name: Add Jenkins LTS repository (official format)
+      copy:
+        dest: /etc/apt/sources.list.d/jenkins.list
+        content: |
+          deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/
+
+    - name: Update apt cache after adding Jenkins repo
+      apt:
+        update_cache: yes
+
+    - name: Install Jenkins LTS
       apt:
         name: jenkins
         state: present
-        update_cache: yes
 
-    - name: Start and enable Jenkins
+    - name: Force Jenkins HTTP_PORT = 8080
+      lineinfile:
+        path: /etc/default/jenkins
+        regexp: '^HTTP_PORT='
+        line: 'HTTP_PORT=8080'
+
+    - name: Make Jenkins listen only on localhost (SAFE)
+      lineinfile:
+        path: /etc/default/jenkins
+        regexp: '^JENKINS_LISTEN_ADDRESS='
+        line: 'JENKINS_LISTEN_ADDRESS=127.0.0.1'
+        create: yes
+
+    - name: Set Jenkins args (Jetty12 requires explicit listen address)
+      lineinfile:
+        path: /etc/default/jenkins
+        regexp: '^JENKINS_ARGS='
+        line: 'JENKINS_ARGS="--webroot=/var/cache/jenkins/war --httpPort=8080 --httpListenAddress=127.0.0.1"'
+
+    - name: Ensure Jenkins PREFIX is /
+      lineinfile:
+        path: /etc/default/jenkins
+        regexp: '^PREFIX='
+        line: 'PREFIX=/'
+
+
+    - name: Restart Jenkins service
       systemd:
         name: jenkins
         enabled: yes
-        state: started
+        state: restarted
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
 
     - name: Remove default nginx config
       file:
         path: /etc/nginx/sites-enabled/default
         state: absent
 
-    - name: Configure Nginx reverse proxy for Jenkins
+    - name: Create Jenkins reverse proxy config
       copy:
         dest: /etc/nginx/sites-available/jenkins
         content: |
           server {
-              listen 80;
+              listen 80 default_server;
               server_name _;
 
               location / {
                   proxy_pass http://127.0.0.1:8080;
+
                   proxy_set_header Host $host;
                   proxy_set_header X-Real-IP $remote_addr;
                   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -64,20 +117,14 @@
               }
           }
 
-    - name: Enable Jenkins Nginx site
+    - name: Enable Jenkins nginx site
       file:
         src: /etc/nginx/sites-available/jenkins
         dest: /etc/nginx/sites-enabled/jenkins
         state: link
 
-    - name: Test nginx configuration
+    - name: Test nginx config
       command: nginx -t
-      register: nginx_test
-      ignore_errors: yes
-
-    - name: Print nginx test result
-      debug:
-        var: nginx_test.stderr_lines
 
     - name: Restart nginx
       systemd:
@@ -85,11 +132,19 @@
         state: restarted
         enabled: yes
 
-    # OPTIONAL: mở firewall nếu dùng UFW
-    - name: Allow HTTP in UFW
-      ufw:
-        rule: allow
-        port: "80"
-        proto: tcp
-      when: ansible_facts.packages.ufw is defined
 
+    - name: Wait for Jenkins password file
+      wait_for:
+        path: /var/lib/jenkins/secrets/initialAdminPassword
+        timeout: 60
+
+    - name: Read Jenkins initial admin password
+      command: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: jpass
+
+    - name: Print Jenkins admin credentials
+      debug:
+        msg: |
+          Jenkins Web: http://{{ ansible_host }}
+          Username: admin
+          Password: {{ jpass.stdout }}
