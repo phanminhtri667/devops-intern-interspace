@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+
+    environment {
+        GCP_CREDS = credentials('gcp-terraform-key')
+        SSH_KEY = credentials('jenkins-ssh-key')
+        GITHUB = credentials('github-token')
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git credentialsId: 'github-token',
+                    url: 'https://github.com/phanminhtri667/lab-combat-gcp.git'
+            }
+        }
+
+        stage('Terraform Init & Apply') {
+            steps {
+                dir('combat-terraform-ansible-basic/terraform') {
+                    sh '''
+                        export GOOGLE_APPLICATION_CREDENTIALS=$GCP_CREDS
+                        terraform init
+                        terraform apply -auto-approve
+                    '''
+                }
+            }
+        }
+
+        stage('Generate inventory') {
+            steps {
+                dir('combat-terraform-ansible-basic/ansible') {
+                    sh '''
+                        chmod +x generate_inventory.sh
+                        ./generate_inventory.sh
+                    '''
+                }
+            }
+        }
+
+        stage('Run Ansible') {
+            steps {
+                dir('combat-terraform-ansible-basic/ansible') {
+                    sh '''
+                        ansible-playbook -i inventory.ini playbook.yml
+                    '''
+                }
+            }
+        }
+    }
+}

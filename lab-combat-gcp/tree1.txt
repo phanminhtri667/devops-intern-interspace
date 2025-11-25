@@ -1,0 +1,17 @@
+.
+├── combat-terraform-ansible-basic
+│   ├── ansible
+│   │   ├── generate_inventory.sh
+│   │   ├── inventory.ini
+│   │   └── playbook.yml
+│   ├── deploy.sh
+│   └── terraform
+│       ├── main.tf
+│       ├── outputs.tf
+│       ├── terraform.tfstate
+│       ├── terraform.tfstate.backup
+│       └── variables.tf
+├── jenkinsFile
+└── tree1.txt
+
+3 directories, 11 files
