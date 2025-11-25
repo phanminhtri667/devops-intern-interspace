@@ -2,51 +2,77 @@ pipeline {
     agent any
 
     environment {
-        GCP_CREDS = credentials('gcp-terraform-key')
-        SSH_KEY = credentials('jenkins-ssh-key')
-        GITHUB = credentials('github-token')
+        GITHUB_TOKEN = credentials('github-token')
+        SSH_KEY = credentials('pmt')             
+        GCP_SA = credentials('gcp_sa')       
     }
 
     stages {
 
         stage('Checkout') {
             steps {
-                git credentialsId: 'github-token',
-                    url: 'https://github.com/phanminhtri667/lab-combat-gcp.git'
+                git(
+                    url: 'https://github.com/phanminhtri667/devops-intern-interspace/tree/lab-gcp/lab-combat-gcp',
+                    credentialsId: 'github-token',
+                    branch: 'main'
+                )
             }
         }
 
-        stage('Terraform Init & Apply') {
+        stage('Terraform Init') {
             steps {
-                dir('combat-terraform-ansible-basic/terraform') {
-                    sh '''
-                        export GOOGLE_APPLICATION_CREDENTIALS=$GCP_CREDS
-                        terraform init
-                        terraform apply -auto-approve
-                    '''
-                }
+                sh '''
+                cd terraform
+                terraform init
+                '''
             }
         }
 
-        stage('Generate inventory') {
+        stage('Terraform Apply') {
             steps {
-                dir('combat-terraform-ansible-basic/ansible') {
-                    sh '''
-                        chmod +x generate_inventory.sh
-                        ./generate_inventory.sh
-                    '''
-                }
+                sh '''
+                cd terraform
+                terraform apply -auto-approve
+                '''
+            }
+        }
+
+        stage('Generate Inventory') {
+            steps {
+                sh '''
+                cd ansible
+                chmod +x generate_inventory.sh
+                ./generate_inventory.sh
+                '''
             }
         }
 
         stage('Run Ansible') {
             steps {
-                dir('combat-terraform-ansible-basic/ansible') {
-                    sh '''
-                        ansible-playbook -i inventory.ini playbook.yml
-                    '''
-                }
+                sh '''
+                cd ansible
+                ansible-playbook -i inventory.ini playbook.yml
+                '''
             }
         }
     }
 }
+post {
+    success {
+        sh '''
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d '{"content": "CI/CD SUCCESS ✔ – Terraform/Ansible hoàn tất"}' \
+          YOUR_DISCORD_WEBHOOK_URL
+        '''
+    }
+    failure {
+        sh '''
+          curl -H "Content-Type: application/json" \
+          -X POST \
+          -d '{"content": "CI/CD FAILED ❌ – Kiểm tra lỗi ngay!"}' \
+          YOUR_DISCORD_WEBHOOK_URL
+        '''
+    }
+}
+
