@@ -1,0 +1,80 @@
+.
+├── jenkinsFile
+├── lab-combat-gcp
+│   ├── combat-terraform-ansible-basic
+│   │   ├── ansible
+│   │   │   ├── generate_inventory.sh
+│   │   │   ├── inventory.ini
+│   │   │   └── playbook.yml
+│   │   └── terraform
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       ├── terraform.tfstate
+│   │       ├── terraform.tfstate.backup
+│   │       └── variables.tf
+│   └── tree1.txt
+├── lab-gcp
+│   ├── lab1-terraform-basic
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   └── variables.tf
+│   ├── lab2-module-gcp
+│   │   ├── main.tf
+│   │   ├── modules
+│   │   │   ├── firewall
+│   │   │   ├── subnet
+│   │   │   ├── vm
+│   │   │   └── vpc
+│   │   ├── outputs.tf
+│   │   └── variables.tf
+│   ├── lab3a-ansible-jenkins
+│   │   ├── inventory.ini
+│   │   ├── playbook.yaml
+│   │   └── README.md
+│   ├── lab3-ansible-basic
+│   │   ├── inventory.ini
+│   │   └── playbook.yml
+│   ├── lab3b-ansible-jenkins
+│   │   ├── inventory.ini
+│   │   ├── playbook.yaml
+│   │   └── README.md
+│   ├── lab3c-ansible-jenkins-agent
+│   │   ├── install_jenkins_agent.yaml
+│   │   ├── install_jenkins_master.yaml
+│   │   ├── inventory.ini
+│   │   └── playbook.yaml
+│   ├── lab4-role-ansible
+│   │   ├── index.html
+│   │   ├── inventory.ini
+│   │   ├── playbook.yml
+│   │   └── roles
+│   │       ├── common
+│   │       ├── editors
+│   │       └── network-tools
+│   ├── lab5-terraform-ansible-basic
+│   │   ├── ansible
+│   │   │   ├── generate_inventory.sh
+│   │   │   ├── inventory.ini
+│   │   │   └── playbook.yml
+│   │   ├── deploy.sh
+│   │   └── terraform
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       ├── terraform.tfstate
+│   │       ├── terraform.tfstate.backup
+│   │       └── variables.tf
+│   ├── lab6-tf-ansible-v2
+│   │   ├── ansible
+│   │   │   ├── inventory.ini
+│   │   │   ├── playbook.yml
+│   │   │   ├── roles
+│   │   │   └── run_ansible.sh
+│   │   └── terraform
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       └── variables.tf
+│   ├── README.md
+│   └── tree1.txt
+└── tree1.txt
+
+28 directories, 49 files

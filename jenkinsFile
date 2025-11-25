@@ -1,0 +1,84 @@
+pipeline {
+    agent any
+
+    environment {
+        GITHUB_TOKEN = credentials('github-token')
+        SSH_KEY      = credentials('pmt')
+        GCP_SA       = credentials('gcp_sa')
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                // Clone đúng repo + đúng branch
+                git(
+                    url: 'https://github.com/phanminhtri667/devops-intern-interspace.git',
+                    credentialsId: 'github-token',
+                    branch: 'lab-gcp'
+                )
+            }
+        }
+
+        // Di chuyển vào đúng folder mà bạn muốn CI/CD chạy
+        stage('Terraform Init') {
+            steps {
+                dir('lab-combat-gcp/combat-terraform-ansible-basic/terraform') {
+                    sh '''
+                        terraform init
+                    '''
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                dir('lab-combat-gcp/combat-terraform-ansible-basic/terraform') {
+                    sh '''
+                        terraform apply -auto-approve
+                    '''
+                }
+            }
+        }
+
+        stage('Generate Inventory') {
+            steps {
+                dir('lab-combat-gcp/combat-terraform-ansible-basic/ansible') {
+                    sh '''
+                        chmod +x generate_inventory.sh
+                        ./generate_inventory.sh
+                    '''
+                }
+            }
+        }
+
+        stage('Run Ansible') {
+            steps {
+                dir('lab-combat-gcp/combat-terraform-ansible-basic/ansible') {
+                    sh '''
+                        ansible-playbook -i inventory.ini playbook.yml
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            sh '''
+                curl -H "Content-Type: application/json" \
+                -X POST \
+                -d '{"content": "CI/CD SUCCESS ✔ – Terraform/Ansible hoàn tất"}' \
+                YOUR_DISCORD_WEBHOOK_URL
+            '''
+        }
+        failure {
+            sh '''
+                curl -H "Content-Type: application/json" \
+                -X POST \
+                -d '{"content": "CI/CD FAILED ❌ – Kiểm tra lỗi ngay!"}' \
+                YOUR_DISCORD_WEBHOOK_URL
+            '''
+        }
+    }
+}
