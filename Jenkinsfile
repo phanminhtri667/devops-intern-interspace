@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         GITHUB_TOKEN = credentials('github-token-3')
-        SSH_KEY = credentials('pmt')
+        // SSH_KEY = credentials('pmt')
         GCP_SA = credentials('gcp_sa')
     }
 
@@ -53,7 +53,7 @@ pipeline {
             steps {
                 sh '''
                 cd lab-combat-gcp/ansible
-                ansible-playbook -i inventory.ini playbook.yml --private-key ${SSH_KEY}
+                ansible-playbook -i inventory.ini playbook.yml 
                 '''
             }
         }
