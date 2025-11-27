@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_TOKEN = credentials('github-token')
+        GITHUB_TOKEN = credentials('github-token-3')
         SSH_KEY = credentials('pmt')
         GCP_SA = credentials('gcp_sa')
     }

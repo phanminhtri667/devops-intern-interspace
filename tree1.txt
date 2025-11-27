@@ -1,0 +1,15 @@
+.
+├── Jenkinsfile
+├── lab-combat-gcp
+│   ├── ansible
+│   │   ├── generate_inventory.sh
+│   │   ├── inventory.ini
+│   │   └── playbook.yml
+│   └── terraform
+│       ├── main.tf
+│       ├── outputs.tf
+│       └── variables.tf
+├── README.md
+└── tree1.txt
+
+3 directories, 9 files
