@@ -22,6 +22,7 @@ pipeline {
         stage('Terraform Init') {
             steps {
                 sh '''
+                export GOOGLE_APPLICATION_CREDENTIALS=${GCP_SA}
                 cd lab-combat-gcp/terraform
                 terraform init
                 '''
@@ -31,6 +32,7 @@ pipeline {
         stage('Terraform Apply') {
             steps {
                 sh '''
+                export GOOGLE_APPLICATION_CREDENTIALS=${GCP_SA}
                 cd lab-combat-gcp/terraform
                 terraform apply -auto-approve
                 '''
