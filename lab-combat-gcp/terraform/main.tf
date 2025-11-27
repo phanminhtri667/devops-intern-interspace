@@ -65,6 +65,6 @@ resource "google_compute_instance" "vm" {
   }
 
   metadata = {
-    ssh-keys = "pmt:${file(var.public_key_path)}"
+    ssh-keys = "jenkins:${file(var.public_key_path)}"
   }
 }
