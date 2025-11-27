@@ -14,7 +14,7 @@ pipeline {
                 git(
                     url: 'https://github.com/phanminhtri667/devops-intern-interspace.git',
                     branch: 'main',
-                    credentialsId: 'github-token'
+                    credentialsId: 'github-token-3'
                 )
             }
         }
