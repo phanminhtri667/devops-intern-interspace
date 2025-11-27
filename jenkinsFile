@@ -1,0 +1,59 @@
+pipeline {
+    agent any
+
+    environment {
+        GITHUB_TOKEN = credentials('github-token')
+        SSH_KEY = credentials('pmt')
+        GCP_SA = credentials('gcp_sa')
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git(
+                    url: 'https://github.com/phanminhtri667/devops-intern-interspace.git',
+                    branch: 'lab-gcp',
+                    credentialsId: 'github-token'
+                )
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                sh '''
+                cd lab-combat-gcp/terraform
+                terraform init
+                '''
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                sh '''
+                cd lab-combat-gcp/terraform
+                terraform apply -auto-approve
+                '''
+            }
+        }
+
+        stage('Generate Inventory') {
+            steps {
+                sh '''
+                cd lab-combat-gcp/ansible
+                chmod +x generate_inventory.sh
+                ./generate_inventory.sh
+                '''
+            }
+        }
+
+        stage('Run Ansible') {
+            steps {
+                sh '''
+                cd lab-combat-gcp/ansible
+                ansible-playbook -i inventory.ini playbook.yml
+                '''
+            }
+        }
+    }
+}
