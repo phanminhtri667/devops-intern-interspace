@@ -13,7 +13,7 @@ pipeline {
             steps {
                 git(
                     url: 'https://github.com/phanminhtri667/devops-intern-interspace.git',
-                    branch: 'lab-gcp',
+                    branch: 'main',
                     credentialsId: 'github-token'
                 )
             }
