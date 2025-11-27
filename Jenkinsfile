@@ -53,7 +53,7 @@ pipeline {
             steps {
                 sh '''
                 cd lab-combat-gcp/ansible
-                ansible-playbook -i inventory.ini playbook.yml
+                ansible-playbook -i inventory.ini playbook.yml --private-key ${SSH_KEY}
                 '''
             }
         }
