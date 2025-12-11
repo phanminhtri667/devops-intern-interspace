@@ -1,0 +1,85 @@
+---
+- name: Cài Nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: khởi động và bật Nginx
+  systemd:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Disable default nginx site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: reload nginx
+
+- name: tạo cấu hình reverse proxy Jenkins
+  copy:
+    dest: /etc/nginx/sites-available/jenkins
+    content: |
+      upstream jenkins {
+        server 127.0.0.1:8080;
+        keepalive 32;
+      }
+
+      map $http_upgrade $connection_upgrade {
+        default upgrade;
+        '' close;
+      }
+
+      server {
+        listen 80 default_server;
+        server_name _;
+
+        access_log /var/log/nginx/jenkins.access.log;
+        error_log  /var/log/nginx/jenkins.error.log;
+
+        ignore_invalid_headers off;
+
+        location ~ "^/static/[0-9a-fA-F]{8}/(.*)$" {
+          rewrite "^/static/[0-9a-fA-F]{8}/(.*)$" /$1 last;
+        }
+
+        location /userContent/ {
+          alias /var/lib/jenkins/userContent/;
+          sendfile on;
+        }
+
+        location / {
+          proxy_pass http://jenkins;
+          proxy_http_version 1.1;
+
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+
+          proxy_set_header X-Forwarded-Host $host;
+          proxy_set_header X-Forwarded-Port $server_port;
+          proxy_set_header X-Forwarded-Server $hostname;
+          proxy_set_header X-Forwarded-For $remote_addr;
+
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection $connection_upgrade;
+
+          client_max_body_size 10m;
+          proxy_read_timeout 90;
+          proxy_request_buffering off;
+        }
+      }
+  notify: reload nginx
+
+- name: kích hoạt site cấu hình jenkins
+  file:
+    src: /etc/nginx/sites-available/jenkins
+    dest: /etc/nginx/sites-enabled/jenkins
+    state: link
+  notify: reload nginx
+
+- name: kiểm tra cấu hình Nginx
+  command: nginx -t
+  changed_when: false

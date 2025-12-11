@@ -1,0 +1,23 @@
+.
+├── ansible
+│   ├── generate_inventory.sh
+│   ├── inventory.ini
+│   ├── playbook.yml
+│   └── role
+│       ├── install_nginx
+│       │   └── tasks
+│       │       └── main.yaml
+│       ├── install_java
+│       │   └── tasks
+│       │       └── main.yaml
+│       └── install_jenkins
+│           └── tasks
+│               └── main.yaml
+├── deploy.sh
+├── terraform
+│   ├── main.tf
+│   ├── outputs.tf
+│   └── variables.tf
+└── tree1.txt
+
+9 directories, 11 files

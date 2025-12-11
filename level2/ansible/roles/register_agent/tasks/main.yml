@@ -1,0 +1,34 @@
+- name: Get Jenkins crumb
+  uri:
+    url: "http://localhost:8080/crumbIssuer/api/json"
+    method: GET
+    user: "{{ lookup('env','JENKINS_USER') }}"
+    password: "{{ lookup('env','JENKINS_API_TOKEN') }}"
+    force_basic_auth: yes
+    return_content: yes
+  register: crumb
+
+- name: Register Jenkins Agent Node
+  uri:
+    url: "http://localhost:8080/computer/doCreateItem?name={{ agent_name }}"
+    method: POST
+    user: "{{ lookup('env','JENKINS_USER') }}"
+    password: "{{ lookup('env','JENKINS_API_TOKEN') }}"
+    force_basic_auth: yes
+    headers:
+      Jenkins-Crumb: "{{ crumb.json.crumb }}"
+    body: |
+      {
+        "name": "{{ agent_name }}",
+        "nodeDescription": "Agent created via Ansible",
+        "numExecutors": 2,
+        "remoteFS": "/opt/jenkins",
+        "labelString": "agent",
+        "mode": "NORMAL",
+        "type": "hudson.slaves.DumbSlave",
+        "launcher": {
+          "stapler-class": "hudson.slaves.JNLPLauncher"
+        }
+      }
+    body_format: json
+    status_code: 200,302

@@ -1,0 +1,20 @@
+---
+- name: Cập nhật các gói
+  apt:
+    update_cache: yes
+
+- name: Cài đặt OpenJDK 21
+  apt:
+    name:
+      - openjdk-21-jre
+      - fontconfig
+    state: present
+
+- name: Kiểm tra phiên bản Java
+  command: java -version
+  register: java_version
+  failed_when: false
+
+- name: Hiển thị thông tin phiên bản
+  debug:
+    var: java_version.stdout

@@ -1,0 +1,42 @@
+---
+- name: Install prereqs
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+    state: present
+
+- name: Create keyring
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Add Jenkins GPG key
+  get_url:
+    url: "https://pkg.jenkins.io/debian/jenkins.io-2023.key"
+    dest: "/etc/apt/keyrings/jenkins-keyring.asc"
+    mode: "0644"
+
+- name: Add Jenkins repo
+  apt_repository:
+    repo: 'deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian binary/'
+    state: present
+
+- name: Update apt cache
+  apt:
+    update_cache: yes
+
+- name: Install Jenkins
+  apt:
+    name: jenkins
+    state: present
+  register: jenkins_pkg
+
+- name: Enable Jenkins
+  systemd:
+    name: jenkins
+    enabled: yes
+    state: started

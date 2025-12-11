@@ -1,0 +1,33 @@
+---
+- name: Install Java
+  apt:
+    name: openjdk-21-jdk
+    state: present
+    update_cache: yes
+
+- name: Create Jenkins agent directory
+  file:
+    path: /opt/jenkins
+    state: directory
+    mode: "0755"
+
+- name: Download agent.jar
+  get_url:
+    url: "http://{{ jenkins_master_ip }}:8080/jnlpJars/agent.jar"
+    dest: /opt/jenkins/agent.jar
+
+- name: Create systemd service for Jenkins agent
+  copy:
+    dest: /etc/systemd/system/jenkins-agent.service
+    content: |
+      [Unit]
+      Description=Jenkins Agent
+      After=network.target
+
+      [Service]
+      ExecStart=/usr/bin/java -jar /opt/jenkins/agent.jar -jnlpUrl http://{{ jenkins_master_ip }}:8080/computer/{{ ansible_hostname }}/jenkins_agent.jnlp -secret {{ jenkins_secret }} -workDir "/opt/jenkins"
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: restart agent

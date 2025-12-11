@@ -1,0 +1,61 @@
+---
+# =====================================================================
+# PLAY 1: Setup Jenkins Master
+# =====================================================================
+- name: Setup Jenkins Master
+  hosts: jenkins_master
+  gather_facts: no
+  become: yes
+
+  tasks:
+    - name: Wait for SSH ready on MASTER
+      wait_for:
+        port: 22
+        host: "{{ ansible_host }}"
+        delay: 10
+        timeout: 300
+
+  roles:
+    - install_java
+    - install_jenkins
+    - install_nginx
+
+
+# =====================================================================
+# PLAY 2: Wait for Jenkins Master ready
+# =====================================================================
+- name: Wait for Jenkins Master
+  hosts: jenkins_master
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Wait Jenkins 8080
+      wait_for:
+        port: 8080
+        timeout: 180
+
+
+# =====================================================================
+# PLAY 3: Setup Jenkins Agent
+# =====================================================================
+- name: Setup Jenkins Agent
+  hosts: jenkins_agent
+  gather_facts: no
+  become: yes
+
+  vars:
+    jenkins_master_ip: "{{ hostvars['master']['private_ip'] }}"
+
+    jenkins_secret: ""
+
+  tasks:
+    - name: Wait for SSH ready on AGENT
+      wait_for:
+        port: 22
+        host: "{{ ansible_host }}"
+        delay: 10
+        timeout: 300
+
+  roles:
+    - install_agent

@@ -1,0 +1,43 @@
+---
+- name: Install Nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Start Nginx
+  systemd:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Remove default site
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: reload nginx
+
+- name: Configure Jenkins reverse proxy
+  copy:
+    dest: /etc/nginx/sites-available/jenkins
+    content: |
+      server {
+        listen 80 default_server;
+        server_name _;
+
+        location / {
+          proxy_pass http://127.0.0.1:8080/;
+          proxy_set_header Host $host;
+        }
+      }
+  notify: reload nginx
+
+- name: Enable Jenkins site
+  file:
+    src: /etc/nginx/sites-available/jenkins
+    dest: /etc/nginx/sites-enabled/jenkins
+    state: link
+  notify: reload nginx
+
+- name: Test nginx
+  command: nginx -t

@@ -1,0 +1,108 @@
+---
+- name: Cài các gói yêu cầu để dùng HTTPS + GPG tools
+  apt:
+    name:
+      - apt-transport-https    #cho phép APT tải repo qua HTTPS
+      - ca-certificates        #cho phép APT tải repo qua HTTPS
+      - curl
+      - gnupg #xử lý key GPG
+    state: present
+    update_cache: yes
+
+- name: Tạo thư mục keyrings cho APT (nếu chưa có)
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Tải GPG key Jenkins (key 2023) vào keyring
+  get_url:
+    url: "https://pkg.jenkins.io/debian/jenkins.io-2023.key"
+    dest: "/etc/apt/keyrings/jenkins-keyring.asc"
+    mode: "0644"
+    force: true
+
+- name: Thêm kho Jenkins (signed-by keyring)
+  apt_repository:
+    repo: 'deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian binary/'
+    state: present
+    filename: "jenkins"
+    update_cache: yes
+
+- name: Cập nhật cache APT sau khi thêm repo
+  apt:
+    update_cache: yes
+
+- name: Cài đặt Jenkins
+  apt:
+    name: jenkins
+    state: present
+  register: jenkins_pkg
+
+- name: Cập nhật cổng HTTP của Jenkins (8080)
+  lineinfile:
+    path: /etc/default/jenkins
+    regexp: '^HTTP_PORT='
+    line: 'HTTP_PORT=8080'
+
+- name: Cập nhật địa chỉ lắng nghe của Jenkins (localhost only)
+  lineinfile:
+    path: /etc/default/jenkins
+    regexp: '^JENKINS_LISTEN_ADDRESS='
+    line: 'JENKINS_LISTEN_ADDRESS=127.0.0.1'
+
+- name: Set Jenkins PREFIX to root (để proxy ở /)
+  lineinfile:
+    path: /etc/default/jenkins
+    regexp: '^PREFIX='
+    line: 'PREFIX='
+
+- name: Create systemd override dir for Jenkins
+  file:
+    path: /etc/systemd/system/jenkins.service.d
+    state: directory
+    mode: "0755"
+
+- name: Force Jenkins bind localhost + root prefix via systemd override
+  copy:
+    dest: /etc/systemd/system/jenkins.service.d/override.conf
+    content: |
+      [Service]
+      Environment="JENKINS_LISTEN_ADDRESS=127.0.0.1"
+      Environment="JENKINS_PORT=8080"
+      Environment="JENKINS_PREFIX=/jenkins"
+      Environment="JENKINS_OPTS="
+  notify:
+    - daemon-reload
+    - restart jenkins
+
+- name: Flush handlers để restart Jenkins ngay
+  meta: flush_handlers
+
+- name: Enable Jenkins service
+  systemd:
+    name: jenkins
+    enabled: yes
+
+- name: Chờ mật khẩu quản trị Jenkins (chỉ khi cài mới)
+  wait_for:
+    path: /var/lib/jenkins/secrets/initialAdminPassword
+    state: present
+    timeout: 180
+  when: jenkins_pkg.changed
+
+- name: Đọc mật khẩu quản trị Jenkins (chỉ khi cài mới)
+  command: cat /var/lib/jenkins/secrets/initialAdminPassword
+  register: adminpass
+  changed_when: false
+  when: jenkins_pkg.changed
+
+- name: Hiển thị mật khẩu quản trị Jenkins (chỉ khi cài mới)
+  debug:
+    msg: "Mật khẩu quản trị Jenkins: {{ adminpass.stdout }}"
+  when: jenkins_pkg.changed
+
+- name: Jenkins đã setup trước đó, bỏ qua bước lấy initial password
+  debug:
+    msg: "Jenkins đã được setup từ trước, không còn initialAdminPassword."
+  when: not jenkins_pkg.changed

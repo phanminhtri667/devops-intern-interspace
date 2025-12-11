@@ -1,0 +1,31 @@
+---
+- name: Cài java
+  hosts: install-jenkins
+  become: yes
+  tasks:
+    - name: Chờ VM SSH sẵn sàng
+      wait_for:
+        host: "{{ ansible_host }}"
+        port: 22
+        delay: 10 
+        timeout: 300
+          
+    - name: Cài đặt Java OpenJDK 21
+      include_role:
+        name: install_java
+
+- name: Cài Jenkins
+  hosts: install-jenkins
+  become: yes
+  tasks:
+    - name: Cài đặt Jenkins
+      include_role:
+        name: install_jenkins
+
+- name: Cài đặt Nginx Reverse Proxy
+  hosts: install-jenkins
+  become: yes
+  tasks:
+    - name: Cài Nginx
+      include_role:
+        name: install_nginx

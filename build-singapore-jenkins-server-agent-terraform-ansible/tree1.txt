@@ -1,0 +1,37 @@
+.
+├── ansible
+│   ├── group_vars
+│   │   ├── all.yml
+│   │   └── jenkins_agent.yml
+│   ├── inventory.ini
+│   ├── inventory.tpl
+│   ├── playbook.yml
+│   └── roles
+│       ├── install_agent
+│       │   ├── handlers
+│       │   │   └── main.yml
+│       │   └── tasks
+│       │       └── main.yml
+│       ├── install_java
+│       │   └── tasks
+│       │       └── main.yaml
+│       ├── install_jenkins
+│       │   ├── handlers
+│       │   │   └── main.yaml
+│       │   └── tasks
+│       │       └── main.yaml
+│       └── install_nginx
+│           ├── handlers
+│           │   └── main.yaml
+│           └── tasks
+│               └── main.yaml
+├── deploy.sh
+├── terraform
+│   ├── main.tf
+│   ├── outputs.tf
+│   ├── terraform.tfstate
+│   ├── terraform.tfstate.backup
+│   └── variables.tf
+└── tree1.txt
+
+15 directories, 19 files

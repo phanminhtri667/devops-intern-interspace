@@ -1,0 +1,6 @@
+---
+- name: restart agent
+  systemd:
+    name: jenkins-agent
+    state: restarted
+    enabled: yes
