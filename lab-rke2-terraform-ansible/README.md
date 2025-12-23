@@ -32,15 +32,15 @@ Mục tiêu chính:
 
 Hệ thống được chia thành **2 pipeline chính**:
 
-### 🔹 Pipeline 1 – Hạ tầng & Kubernetes
+### Pipeline 1 – Hạ tầng & Kubernetes
 - Terraform tạo hạ tầng trên GCP
 - Ansible cài đặt và cấu hình Kubernetes (RKE2)
 - ArgoCD được cài trực tiếp trong cluster
 
-### 🔹 Pipeline 2 – Ứng dụng (GitOps)
-- Dev build image bằng **GitHub Actions**
-- Image được lưu ở **Container Registry**
-- ArgoCD pull **Helm chart** và deploy ứng dụng lên cluster
+### Pipeline 2 – Ứng dụng (GitOps)
+- Dev build image bằng GitHub Actions
+- Image được lưu ở Container Registry
+- ArgoCD pull Helm chart và deploy ứng dụng lên cluster
 
 ---
 
@@ -52,13 +52,13 @@ Terraform hiện đang làm các việc sau:
 - Tạo VPC và Subnet
 - Cấu hình firewall cơ bản
 - Tạo VM:
-  - 1 VM **master** (RKE2 server)
-  - 1 VM **worker** (RKE2 agent)
+  - 1 VM master (RKE2 server)
+  - 1 VM worker (RKE2 agent)
 - Inject SSH key
-- Xuất **public IP** và **private IP**
-- Sinh file **inventory cho Ansible** từ template
+- Xuất public IP và private IP
+- Sinh file inventory cho Ansible từ template
 
-👉 Terraform **chỉ chịu trách nhiệm hạ tầng**, không cài phần mềm.
+Terraform **chỉ chịu trách nhiệm hạ tầng**, không cài phần mềm.
 
 ---
 
@@ -74,197 +74,170 @@ Ansible đảm nhiệm:
 
 Toàn bộ quá trình được orchestration bằng script:
 
-```bash
-./deploy.sh
-4. Pipeline 2 – Triển khai ứng dụng (GitOps)
+    ./deploy.sh
+
+---
+
+## 4. Pipeline 2 – Triển khai ứng dụng (GitOps)
 
 Pipeline ứng dụng được thiết kế theo GitOps:
 
-Dev push code lên Git repository
+- Dev push code lên Git repository
+- CI build Docker image
+- Image được push lên container registry
+- Repo Helm lưu cấu hình deploy
+- ArgoCD:
+  - Theo dõi repo Helm
+  - Tự động sync
+  - Deploy app lên Kubernetes worker node
 
-CI build Docker image
+---
 
-Image được push lên container registry
-
-Repo Helm lưu cấu hình deploy
-
-ArgoCD:
-
-Theo dõi repo Helm
-
-Tự động sync
-
-Deploy app lên Kubernetes worker node
-
-5. Cách ArgoCD sync ứng dụng (thực tế đã làm)
+## 5. Cách ArgoCD sync ứng dụng (thực tế đã làm)
 
 Sau khi Pipeline 1 chạy thành công, hệ thống đã có:
+- Kubernetes cluster hoạt động
+- ArgoCD được cài trong cluster
 
-Kubernetes cluster hoạt động
-
-ArgoCD được cài trong cluster
-
-5.1 Kết nối ArgoCD với Helm Repository
+### 5.1 Kết nối ArgoCD với Helm Repository
 
 Các bước thực hiện:
+- Truy cập ArgoCD UI
+- Add repository chứa Helm chart
+- Xác thực bằng GitHub Personal Access Token (PAT)
+  (do repo là private)
 
-Truy cập ArgoCD UI
+PAT cho phép ArgoCD:
+- Clone repo Helm
+- Theo dõi thay đổi trong Git
+- Sync ứng dụng tự động
 
-Add repository chứa Helm chart
+---
 
-Xác thực bằng GitHub Personal Access Token (PAT)
-(do repo là private)
-
-👉 PAT cho phép ArgoCD:
-
-Clone repo Helm
-
-Theo dõi thay đổi trong Git
-
-Sync ứng dụng tự động
-
-5.2 Tạo Application trong ArgoCD
+### 5.2 Tạo Application trong ArgoCD
 
 Trong ArgoCD:
-
-Khai báo:
-
-Repo URL (Helm repo)
-
-Path đến Helm chart
-
-Target cluster (in-cluster)
-
-Namespace deploy
-
-Bật Auto Sync
+- Khai báo:
+  - Repo URL (Helm repo)
+  - Path đến Helm chart
+  - Target cluster (in-cluster)
+  - Namespace deploy
+- Bật Auto Sync
 
 Khi Auto Sync được bật:
+- Mỗi lần repo Helm thay đổi
+- ArgoCD tự động reconcile trạng thái cluster
 
-Mỗi lần repo Helm thay đổi
+---
 
-ArgoCD tự động reconcile trạng thái cluster
-
-5.3 Luồng sync GitOps hoàn chỉnh
+### 5.3 Luồng sync GitOps hoàn chỉnh
 
 Luồng triển khai ứng dụng:
 
-CI build image → push image mới
+- CI build image → push image mới
+- CI update values.yaml (tag image)
+- Commit & push repo Helm
+- ArgoCD phát hiện thay đổi
+- ArgoCD auto sync
+- Kubernetes deploy / update application
 
-CI update values.yaml (tag image)
+Không cần dùng kubectl apply thủ công.
 
-Commit & push repo Helm
+---
 
-ArgoCD phát hiện thay đổi
+## 6. Cấu trúc project hiện tại
 
-ArgoCD auto sync
+    .
+    ├── ansible
+    │   ├── ansible.cfg
+    │   ├── install-rke2-server.yaml
+    │   ├── install-rke2-agent.yaml
+    │   ├── install-argocd.yaml
+    │   ├── inventory.tpl
+    │   ├── inventory.ini
+    │   └── site.yaml
+    ├── terraform
+    │   ├── main.tf
+    │   ├── providers.tf
+    │   ├── variables.tf
+    │   ├── outputs.tf
+    │   └── modules
+    │       ├── network
+    │       └── vm
+    ├── deploy.sh
+    ├── docs
+    │   └── image.png
+    └── README.md
 
-Kubernetes deploy / update application
+---
 
-👉 Không cần dùng kubectl apply thủ công.
-
-6. Cấu trúc project hiện tại
-.
-├── ansible
-│   ├── ansible.cfg
-│   ├── install-rke2-server.yaml
-│   ├── install-rke2-agent.yaml
-│   ├── install-argocd.yaml
-│   ├── inventory.tpl
-│   ├── inventory.ini
-│   └── site.yaml
-├── terraform
-│   ├── main.tf
-│   ├── providers.tf
-│   ├── variables.tf
-│   ├── outputs.tf
-│   └── modules
-│       ├── network
-│       └── vm
-├── deploy.sh
-├── docs
-│   └── image.png
-└── README.md
-
-7. Những vấn đề hiện tại
+## 7. Những vấn đề hiện tại
 
 Hệ thống hoạt động được nhưng còn các hạn chế:
 
-❌ Chưa scale node linh hoạt (số worker cố định)
+- Chưa scale node linh hoạt (số worker cố định)
+- Chưa quản lý multi-app chuẩn
+- Chưa kiểm soát ứng dụng chạy trên node nào
+- Chưa có UI quản lý cluster
+- Cluster chỉ có 1 master (chưa HA)
+- Monitoring (ELK, Prometheus, Grafana) mới ở mức sơ đồ
 
-❌ Chưa quản lý multi-app chuẩn
+---
 
-❌ Chưa kiểm soát ứng dụng chạy trên node nào
+## 8. Hướng phát triển & cách giải quyết
 
-❌ Chưa có UI quản lý cluster
-
-❌ Cluster chỉ có 1 master (chưa HA)
-
-❌ Monitoring (ELK, Prometheus, Grafana) mới ở mức sơ đồ
-
-8. Hướng phát triển & cách giải quyết
-8.1 Multi-app (nhiều ứng dụng)
+### 8.1 Multi-app (nhiều ứng dụng)
 
 Cách làm:
+- Mỗi ứng dụng là một Helm chart
+- Repo Helm có cấu trúc:
 
-Mỗi ứng dụng là một Helm chart
-
-Repo Helm có cấu trúc:
-
-helm-repo/
-├── app1/
-│   ├── Chart.yaml
-│   ├── values.yaml
-│   └── templates/
-├── app2/
-└── app3/
-
+    helm-repo/
+    ├── app1/
+    │   ├── Chart.yaml
+    │   ├── values.yaml
+    │   └── templates/
+    ├── app2/
+    └── app3/
 
 Trong values.yaml:
+- Quản lý image (repository, tag)
+- CI chỉ cần update tag
+- ArgoCD tự động sync
 
-Quản lý image (repository, tag)
+---
 
-CI chỉ cần update tag
+### 8.2 Phân bổ app lên node worker
 
-ArgoCD tự động sync
+Label node:
 
-8.2 Phân bổ app lên node worker
+    kubectl label node worker-1 role=backend
 
-Label node
+Trong Helm:
 
-kubectl label node worker-1 role=backend
-
-
-Trong Helm
-
-nodeSelector:
-  role: backend
-
+    nodeSelector:
+      role: backend
 
 Hoặc dùng affinity để phân bổ nâng cao.
 
-8.3 Scale node nhanh & quản lý cluster
+---
 
-Terraform
+### 8.3 Scale node nhanh & quản lý cluster
 
-Dùng count / for_each để tăng giảm số VM worker
+Terraform:
+- Dùng count / for_each để tăng giảm số VM worker
 
-Rancher
+Rancher:
+- Import RKE2 cluster
+- Quản lý node bằng UI
+- Thêm / xoá worker nhanh
+- Phục vụ vận hành (day-2 operations)
 
-Import RKE2 cluster
+---
 
-Quản lý node bằng UI
-
-Thêm / xoá worker nhanh
-
-Phục vụ vận hành (day-2 operations)
-
-9. Kết luận
+## 9. Kết luận
 
 Dự án đã:
-
-Tự động hoá hạ tầng
-
-Tự động cài Kubernetes
-
-Triển khai GitOps
+- Tự động hoá hạ tầng
+- Tự động cài Kubernetes
+- Triển khai GitOps
