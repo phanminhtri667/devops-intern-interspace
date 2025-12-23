@@ -1,0 +1,64 @@
+---
+- hosts: masters
+  become: yes
+
+  tasks:
+    - name: Install RKE2 server
+      shell: curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=server sh -
+      args:
+        creates: /usr/local/bin/rke2
+
+    - name: Enable & start rke2-server
+      systemd:
+        name: rke2-server
+        enabled: yes
+        state: started
+
+    - name: Wait for token file
+      wait_for:
+        path: /var/lib/rancher/rke2/server/node-token
+        timeout: 600
+
+    - name: Read node token
+      slurp:
+        src: /var/lib/rancher/rke2/server/node-token
+      register: token
+
+    - name: Save token to local file
+      delegate_to: localhost
+      become: false
+      copy:
+        content: "{{ token.content | b64decode }}"
+        dest: "/tmp/rke2-node-token"
+        mode: "0600"
+
+    - name: Ensure .kube directory exists for user
+      file:
+        path: /home/pmt/.kube
+        state: directory
+        owner: pmt
+        group: pmt
+        mode: "0755"
+
+    - name: Copy kubeconfig to user home
+      copy:
+        src: /etc/rancher/rke2/rke2.yaml
+        dest: /home/pmt/.kube/config
+        remote_src: yes
+        owner: pmt
+        group: pmt
+        mode: "0644"
+
+    - name: Set KUBECONFIG permanently
+      lineinfile:
+        path: /home/pmt/.bashrc
+        line: 'export KUBECONFIG=$HOME/.kube/config'
+        create: yes
+        state: present
+
+    - name: Add rke2 binaries to PATH
+      lineinfile:
+        path: /home/pmt/.bashrc
+        line: 'export PATH=$PATH:/var/lib/rancher/rke2/bin'
+        create: yes
+        state: present

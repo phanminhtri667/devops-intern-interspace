@@ -1,0 +1,45 @@
+---
+- hosts: masters
+  become: yes
+
+  tasks:
+    - name: Create argocd namespace
+      command: >
+        /var/lib/rancher/rke2/bin/kubectl
+        create namespace argocd
+        --kubeconfig=/etc/rancher/rke2/rke2.yaml
+      failed_when: false
+
+    - name: Install ArgoCD
+      command: >
+        /var/lib/rancher/rke2/bin/kubectl
+        apply -n argocd
+        -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+        --kubeconfig=/etc/rancher/rke2/rke2.yaml
+        --validate=false
+
+    - name: Wait for ArgoCD initial admin secret
+      command: >
+        /var/lib/rancher/rke2/bin/kubectl
+        -n argocd
+        get secret argocd-initial-admin-secret
+        --kubeconfig=/etc/rancher/rke2/rke2.yaml
+      register: secret_check
+      retries: 20
+      delay: 10
+      until: secret_check.rc == 0
+      changed_when: false
+
+    - name: Get ArgoCD admin password
+      command: >
+        /var/lib/rancher/rke2/bin/kubectl
+        -n argocd
+        get secret argocd-initial-admin-secret
+        -o jsonpath="{.data.password}"
+        --kubeconfig=/etc/rancher/rke2/rke2.yaml
+      register: argocd_pass
+      changed_when: false
+
+    - name: Show ArgoCD admin password
+      debug:
+        msg: "ArgoCD admin password: {{ argocd_pass.stdout | b64decode }}"

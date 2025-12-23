@@ -1,0 +1,4 @@
+---
+- import_playbook: install-rke2-server.yaml
+- import_playbook: install-rke2-agent.yaml
+- import_playbook: install-argocd.yaml

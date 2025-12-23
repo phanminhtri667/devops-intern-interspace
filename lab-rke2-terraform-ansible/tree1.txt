@@ -1,0 +1,26 @@
+.
+├── ansible
+│   ├── ansible.cfg
+│   ├── install-argocd.yaml
+│   ├── install-rke2-agent.yaml
+│   ├── install-rke2-server.yaml
+│   ├── inventory.ini
+│   ├── inventory.tpl
+│   └── site.yaml
+├── deploy.sh
+├── docs
+│   └── image.png
+├── README.md
+├── terraform
+│   ├── main.tf
+│   ├── modules
+│   │   ├── network
+│   │   └── vm
+│   ├── outputs.tf
+│   ├── providers.tf
+│   ├── terraform.tfstate
+│   ├── terraform.tfstate.backup
+│   └── variables.tf
+└── tree1.txt
+
+6 directories, 17 files
