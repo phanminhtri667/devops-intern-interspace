@@ -10,3 +10,7 @@ variable "tags" {
   type    = list(string)
   default = []
 }
+variable "disk_size" {
+  description = "Boot disk size (GB)"
+  type        = number
+}

@@ -1,0 +1,72 @@
+---
+- name: Install Rancher on RKE2 cluster
+  hosts: masters
+  become: yes
+
+  vars:
+    rancher_namespace: cattle-system
+    rancher_hostname: "{{ ansible_host }}.nip.io"
+    rke2_bin_path: /var/lib/rancher/rke2/bin
+
+  tasks:
+    - name: Ensure kubeconfig exists
+      stat:
+        path: /etc/rancher/rke2/rke2.yaml
+      register: kubeconfig_file
+
+    - name: Fail if kubeconfig not found
+      fail:
+        msg: "RKE2 kubeconfig not found. RKE2 server may not be ready."
+      when: not kubeconfig_file.stat.exists
+
+    - name: Setup kubeconfig for root
+      shell: |
+        mkdir -p /root/.kube
+        cp /etc/rancher/rke2/rke2.yaml /root/.kube/config
+        chmod 600 /root/.kube/config
+
+    - name: Ensure RKE2 kubectl available for root
+      lineinfile:
+        path: /root/.bashrc
+        line: 'export PATH=$PATH:{{ rke2_bin_path }}'
+        create: yes
+        state: present
+
+    - name: Install Helm
+      shell: |
+        if ! command -v helm >/dev/null 2>&1; then
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        fi
+
+    - name: Add Helm repositories
+      shell: |
+        helm repo add jetstack https://charts.jetstack.io
+        helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+        helm repo update
+
+    - name: Install cert-manager
+      shell: |
+        export PATH=$PATH:{{ rke2_bin_path }}
+        kubectl create namespace cert-manager --dry-run=client -o yaml | kubectl apply -f -
+        helm upgrade --install cert-manager jetstack/cert-manager \
+          --namespace cert-manager \
+          --set crds.enabled=true
+
+    - name: Wait for cert-manager to be ready
+      shell: |
+        export PATH=$PATH:{{ rke2_bin_path }}
+        kubectl rollout status deployment cert-manager -n cert-manager
+      retries: 10
+      delay: 20
+      register: cm_status
+      until: cm_status.rc == 0
+
+    - name: Install Rancher
+      shell: |
+        export PATH=$PATH:{{ rke2_bin_path }}
+        kubectl create namespace {{ rancher_namespace }} --dry-run=client -o yaml | kubectl apply -f -
+        helm upgrade --install rancher rancher-latest/rancher \
+          --namespace {{ rancher_namespace }} \
+          --set hostname={{ rancher_hostname }} \
+          --set ingress.tls.source=selfSigned \
+          --set replicas=1

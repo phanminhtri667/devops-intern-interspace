@@ -7,6 +7,8 @@ resource "google_compute_instance" "vm" {
   boot_disk {
     initialize_params {
       image = var.image
+      size  = var.disk_size
+      type  = "pd-balanced"
     }
   }
 

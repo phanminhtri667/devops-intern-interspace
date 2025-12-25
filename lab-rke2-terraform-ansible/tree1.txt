@@ -2,6 +2,7 @@
 ├── ansible
 │   ├── ansible.cfg
 │   ├── install-argocd.yaml
+│   ├── install-rancher.yaml
 │   ├── install-rke2-agent.yaml
 │   ├── install-rke2-server.yaml
 │   ├── inventory.ini
@@ -15,7 +16,13 @@
 │   ├── main.tf
 │   ├── modules
 │   │   ├── network
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   └── variables.tf
 │   │   └── vm
+│   │       ├── main.tf
+│   │       ├── outputs.tf
+│   │       └── variables.tf
 │   ├── outputs.tf
 │   ├── providers.tf
 │   ├── terraform.tfstate
@@ -23,4 +30,4 @@
 │   └── variables.tf
 └── tree1.txt
 
-6 directories, 17 files
+6 directories, 24 files

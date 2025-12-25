@@ -1,243 +1,208 @@
-# 🚀 RKE2 on GCP – Hạ tầng IaC & GitOps
+🚀 RKE2 on GCP – Hạ tầng IaC & GitOps
+<p align="center"> <img src="docs/image.png" alt="Sơ đồ kiến trúc" width="85%"> </p> <p align="center"> <b>Terraform · Ansible · RKE2 · ArgoCD · Rancher · GitOps</b> </p>
+📑 Mục lục
 
-<p align="center">
-  <img src="docs/image.png" alt="Sơ đồ kiến trúc" width="85%">
-</p>
+Mục tiêu dự án
 
-<p align="center">
-  <b>Terraform · Ansible · RKE2 · ArgoCD · GitOps</b>
-</p>
+Tổng quan kiến trúc
 
----
+Pipeline 1 – Hạ tầng & Kubernetes
 
-## 1. Mục tiêu dự án
+Pipeline 2 – Triển khai ứng dụng (GitOps)
 
-Dự án này xây dựng một hệ thống **triển khai hạ tầng và Kubernetes tự động**
-trên **Google Cloud Platform (GCP)** bằng cách áp dụng:
+GitOps với ArgoCD
 
-- **Infrastructure as Code**: Terraform
-- **Configuration Management**: Ansible
-- **Kubernetes**: RKE2
-- **GitOps**: ArgoCD
+Quản lý & vận hành cluster với Rancher
 
-Mục tiêu chính:
-- Tự động tạo hạ tầng cloud
-- Tự động cài đặt Kubernetes cluster
-- Chuẩn bị nền tảng cho CI/CD và triển khai ứng dụng theo GitOps
-- Làm cơ sở để mở rộng **multi-app** và **scale cluster** sau này
+Cấu trúc project
 
----
+Hạn chế hiện tại & hướng phát triển
 
-## 2. Tổng quan kiến trúc
+Kết luận
 
-Hệ thống được chia thành **2 pipeline chính**:
+# 1. Mục tiêu dự án
 
-### Pipeline 1 – Hạ tầng & Kubernetes
-- Terraform tạo hạ tầng trên GCP
-- Ansible cài đặt và cấu hình Kubernetes (RKE2)
-- ArgoCD được cài trực tiếp trong cluster
+Dự án xây dựng hệ thống triển khai hạ tầng và Kubernetes tự động trên Google Cloud Platform (GCP), áp dụng:
 
-### Pipeline 2 – Ứng dụng (GitOps)
-- Dev build image bằng GitHub Actions
-- Image được lưu ở Container Registry
-- ArgoCD pull Helm chart và deploy ứng dụng lên cluster
+Infrastructure as Code: Terraform
 
----
+Configuration Management: Ansible
 
-## 3. Pipeline 1 – Hạ tầng (Terraform + Ansible)
+Kubernetes: RKE2
 
-### 3.1 Terraform – Tạo hạ tầng GCP
+GitOps: ArgoCD
 
-Terraform hiện đang làm các việc sau:
-- Tạo VPC và Subnet
-- Cấu hình firewall cơ bản
-- Tạo VM:
-  - 1 VM master (RKE2 server)
-  - 1 VM worker (RKE2 agent)
-- Inject SSH key
-- Xuất public IP và private IP
-- Sinh file inventory cho Ansible từ template
+Mục tiêu:
 
-Terraform **chỉ chịu trách nhiệm hạ tầng**, không cài phần mềm.
+Tự động hoá hạ tầng cloud
 
----
+Tự động cài đặt Kubernetes cluster
 
-### 3.2 Ansible – Cài Kubernetes & ArgoCD
+Triển khai ứng dụng theo GitOps
 
-Ansible đảm nhiệm:
-- Cài RKE2 server trên node master
-- Lấy token join cluster
-- Cài RKE2 agent trên node worker
-- Join worker vào cluster
-- Cấu hình kubeconfig cho user
-- Cài ArgoCD vào namespace `argocd`
+Chuẩn bị nền tảng mở rộng & vận hành cluster (day-2 operations)
 
-Toàn bộ quá trình được orchestration bằng script:
+# 2. Tổng quan kiến trúc
 
-    ./deploy.sh
+Hệ thống gồm 2 pipeline chính:
 
----
+Pipeline 1 – Hạ tầng & Kubernetes
 
-## 4. Pipeline 2 – Triển khai ứng dụng (GitOps)
+Terraform tạo hạ tầng GCP (VPC, Subnet, VM)
 
-Pipeline ứng dụng được thiết kế theo GitOps:
+Ansible cài RKE2 cluster
 
-- Dev push code lên Git repository
-- CI build Docker image
-- Image được push lên container registry
-- Repo Helm lưu cấu hình deploy
-- ArgoCD:
-  - Theo dõi repo Helm
-  - Tự động sync
-  - Deploy app lên Kubernetes worker node
+Cài ArgoCD và Rancher trong cluster
 
----
+Pipeline 2 – Ứng dụng (GitOps)
 
-## 5. Cách ArgoCD sync ứng dụng (thực tế đã làm)
+CI build & push Docker image
 
-Sau khi Pipeline 1 chạy thành công, hệ thống đã có:
-- Kubernetes cluster hoạt động
-- ArgoCD được cài trong cluster
+ArgoCD pull Helm chart
 
-### 5.1 Kết nối ArgoCD với Helm Repository
-
-Các bước thực hiện:
-- Truy cập ArgoCD UI
-- Add repository chứa Helm chart
-- Xác thực bằng GitHub Personal Access Token (PAT)
-  (do repo là private)
-
-PAT cho phép ArgoCD:
-- Clone repo Helm
-- Theo dõi thay đổi trong Git
-- Sync ứng dụng tự động
+Tự động deploy & sync ứng dụng
 
----
+#  3. Pipeline 1 – Hạ tầng & Kubernetes
+## 3.1 Terraform – Tạo hạ tầng GCP
 
-### 5.2 Tạo Application trong ArgoCD
+Terraform chịu trách nhiệm:
 
-Trong ArgoCD:
-- Khai báo:
-  - Repo URL (Helm repo)
-  - Path đến Helm chart
-  - Target cluster (in-cluster)
-  - Namespace deploy
-- Bật Auto Sync
+Tạo VPC, Subnet, Firewall
 
-Khi Auto Sync được bật:
-- Mỗi lần repo Helm thay đổi
-- ArgoCD tự động reconcile trạng thái cluster
+Tạo VM:
 
----
+1 VM master (RKE2 server, Rancher, ArgoCD)
 
-### 5.3 Luồng sync GitOps hoàn chỉnh
+1 VM worker (RKE2 agent)
 
-Luồng triển khai ứng dụng:
+Inject SSH key
 
-- CI build image → push image mới
-- CI update values.yaml (tag image)
-- Commit & push repo Helm
-- ArgoCD phát hiện thay đổi
-- ArgoCD auto sync
-- Kubernetes deploy / update application
+Xuất IP & sinh inventory cho Ansible
 
-Không cần dùng kubectl apply thủ công.
+Terraform chỉ quản lý hạ tầng, không cài phần mềm.
 
----
+## 3.2 Ansible – Cài RKE2, ArgoCD & Rancher
 
-## 6. Cấu trúc project hiện tại
+Ansible thực hiện:
 
-    .
-    ├── ansible
-    │   ├── ansible.cfg
-    │   ├── install-rke2-server.yaml
-    │   ├── install-rke2-agent.yaml
-    │   ├── install-argocd.yaml
-    │   ├── inventory.tpl
-    │   ├── inventory.ini
-    │   └── site.yaml
-    ├── terraform
-    │   ├── main.tf
-    │   ├── providers.tf
-    │   ├── variables.tf
-    │   ├── outputs.tf
-    │   └── modules
-    │       ├── network
-    │       └── vm
-    ├── deploy.sh
-    ├── docs
-    │   └── image.png
-    └── README.md
+Cài RKE2 server (master)
 
----
+Cài RKE2 agent (worker)
 
-## 7. Những vấn đề hiện tại
+Join node vào cluster
 
-Hệ thống hoạt động được nhưng còn các hạn chế:
+Cấu hình kubeconfig
 
-- Chưa scale node linh hoạt (số worker cố định)
-- Chưa quản lý multi-app chuẩn
-- Chưa kiểm soát ứng dụng chạy trên node nào
-- Chưa có UI quản lý cluster
-- Cluster chỉ có 1 master (chưa HA)
-- Monitoring (ELK, Prometheus, Grafana) mới ở mức sơ đồ
+Cài ArgoCD
 
----
+Cài Rancher để quản lý cluster
 
-## 8. Hướng phát triển & cách giải quyết
+Toàn bộ được orchestration bằng:
 
-### 8.1 Multi-app (nhiều ứng dụng)
+./deploy.sh
 
-Cách làm:
-- Mỗi ứng dụng là một Helm chart
-- Repo Helm có cấu trúc:
+# 4. Pipeline 2 – Triển khai ứng dụng (GitOps)
 
-    helm-repo/
-    ├── app1/
-    │   ├── Chart.yaml
-    │   ├── values.yaml
-    │   └── templates/
-    ├── app2/
-    └── app3/
+Pipeline GitOps:
 
-Trong values.yaml:
-- Quản lý image (repository, tag)
-- CI chỉ cần update tag
-- ArgoCD tự động sync
+Dev push code
 
----
+CI build & push image
 
-### 8.2 Phân bổ app lên node worker
+CI update Helm values
 
-Label node:
+ArgoCD tự động sync & deploy
 
-    kubectl label node worker-1 role=backend
+👉 Không cần kubectl apply thủ công.
 
-Trong Helm:
+# 5. GitOps với ArgoCD
+## 5.1 Kết nối Helm Repository
 
-    nodeSelector:
-      role: backend
+Add repo Helm (private)
 
-Hoặc dùng affinity để phân bổ nâng cao.
+Xác thực bằng GitHub PAT
 
----
+ArgoCD theo dõi thay đổi Git
 
-### 8.3 Scale node nhanh & quản lý cluster
+## 5.2 Tạo Application
 
-Terraform:
-- Dùng count / for_each để tăng giảm số VM worker
+Khai báo repo, path, namespace
 
-Rancher:
-- Import RKE2 cluster
-- Quản lý node bằng UI
-- Thêm / xoá worker nhanh
-- Phục vụ vận hành (day-2 operations)
+Bật Auto Sync
 
----
+## 5.3 Luồng GitOps
+CI → Update Helm → Git push
+→ ArgoCD detect → Sync → Deploy
 
-## 9. Kết luận
+# 6. Quản lý & vận hành cluster với Rancher
+
+Rancher được cài trực tiếp trong RKE2 cluster để phục vụ day-2 operations:
+
+Quản lý cluster bằng UI
+
+Theo dõi node (CPU, RAM, trạng thái)
+
+Quản lý workload, namespace, RBAC
+
+Tích hợp monitoring (Prometheus, Grafana)
+
+Truy cập Rancher (lab)
+
+Rancher được expose qua NodePort
+
+Truy cập bằng:
+
+https://<MASTER_PUBLIC_IP>.nip.io:<NODEPORT>
+
+#  7. Cấu trúc project
+.
+├── ansible
+│   ├── install-rke2-server.yaml
+│   ├── install-rke2-agent.yaml
+│   ├── install-argocd.yaml
+│   ├── install-rancher.yaml
+│   ├── inventory.tpl
+│   ├── inventory.ini
+│   └── site.yaml
+├── terraform
+│   ├── main.tf
+│   ├── variables.tf
+│   ├── outputs.tf
+│   └── modules
+│       ├── network
+│       └── vm
+├── deploy.sh
+└── README.md
+
+#  8. Hạn chế hiện tại & hướng phát triển
+Hạn chế
+
+Worker scale còn thủ công
+
+Cluster chỉ có 1 master (chưa HA)
+
+Monitoring mới ở mức cơ bản
+
+Hướng phát triển
+
+Scale worker bằng Terraform (count / for_each)
+
+Import cluster vào Rancher để vận hành
+
+Thêm Monitoring (Prometheus, Grafana)
+
+Nâng cấp HA control-plane
+
+Áp dụng Cluster Autoscaler
+
+#  9. Kết luận
 
 Dự án đã:
-- Tự động hoá hạ tầng
-- Tự động cài Kubernetes
-- Triển khai GitOps
+
+Tự động hoá hạ tầng bằng Terraform
+
+Cài Kubernetes bằng Ansible
+
+Triển khai ứng dụng theo GitOps
+
+Quản lý & vận hành cluster bằng Rancher

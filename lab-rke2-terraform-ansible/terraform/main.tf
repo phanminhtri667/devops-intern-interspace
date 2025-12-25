@@ -12,7 +12,10 @@ module "master" {
   name            = "rke2-master"
   zone            = var.zone
   subnet_id       = module.network.subnet_id
-  machine_type    = var.vm_machine_type
+
+  machine_type    = var.master_machine_type
+  disk_size       = var.master_disk_size
+
   image           = var.vm_image
   ssh_user        = var.ssh_user
   public_key_path = var.public_key_path
@@ -25,7 +28,10 @@ module "worker" {
   name            = "rke2-worker"
   zone            = var.zone
   subnet_id       = module.network.subnet_id
-  machine_type    = var.vm_machine_type
+
+  machine_type    = var.worker_machine_type
+  disk_size       = var.worker_disk_size
+
   image           = var.vm_image
   ssh_user        = var.ssh_user
   public_key_path = var.public_key_path
