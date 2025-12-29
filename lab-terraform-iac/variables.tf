@@ -6,7 +6,7 @@ variable "vpc_cidr"    { default = "10.20.0.0/16" }
 variable "subnet_cidr" { default = "10.20.1.0/24" }
 
 variable "master_count" { default = 1 }
-variable "worker_count" { default = 1 }
+variable "worker_count" { default = 2 }
 
 variable "master_machine_type" { default = "e2-standard-2" }
 variable "worker_machine_type" { default = "e2-medium" }
