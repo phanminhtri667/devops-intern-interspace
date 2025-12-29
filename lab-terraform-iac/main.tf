@@ -3,24 +3,24 @@ data "local_file" "ssh_key" {
 }
 
 resource "google_compute_network" "vpc" {
-  name                    = "rke2-vpc"
+  name                    = "vpc-rke2-2912"
   auto_create_subnetworks = false
 }
 
 resource "google_compute_subnetwork" "subnet" {
-  name          = "rke2-subnet"
+  name          = "rke2-subnet-2912"
   network       = google_compute_network.vpc.id
   ip_cidr_range = var.subnet_cidr
   region        = var.region
 }
 
 resource "google_compute_firewall" "rke2" {
-  name    = "rke2-firewall"
+  name    = "rke2-firewall-2912"
   network = google_compute_network.vpc.name
 
   allow {
     protocol = "tcp"
-    ports    = ["22", "6443", "9345"]
+    ports    = ["22", "6443", "9345", "8443"]
   }
 
   allow {
@@ -33,7 +33,7 @@ resource "google_compute_firewall" "rke2" {
 
 resource "google_compute_instance" "master" {
   count        = var.master_count
-  name         = "vm-rke2-master-${count.index}"
+  name         = "vm-rke2-master-2912-${count.index}"
   machine_type = var.master_machine_type
   zone         = var.zone
 
@@ -54,26 +54,76 @@ resource "google_compute_instance" "master" {
   }
 
   metadata_startup_script = <<-EOF
-    #!/bin/bash
-    set -e
+#!/bin/bash
+set -e
 
-    curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=server sh -
+# 1. Install RKE2 server
+curl -sfL https://get.rke2.io | INSTALL_RKE2_TYPE=server sh -
 
-    mkdir -p /etc/rancher/rke2
-    cat <<EOT > /etc/rancher/rke2/config.yaml
-    token: ${var.rke2_token}
-    tls-san:
-      - 0.0.0.0
-    EOT
+mkdir -p /etc/rancher/rke2
+cat <<EOT > /etc/rancher/rke2/config.yaml
+token: ${var.rke2_token}
+tls-san:
+  - 0.0.0.0
+EOT
 
-    systemctl enable rke2-server
-    systemctl start rke2-server
-  EOF
+systemctl enable rke2-server
+systemctl start rke2-server
+
+# 2. Wait for kubeconfig
+until [ -f /etc/rancher/rke2/rke2.yaml ]; do
+  sleep 2
+done
+
+# 3. Prepare kubeconfig for SSH user (STANDARD WAY)
+USER_HOME=$(getent passwd ${var.ssh_user} | cut -d: -f6)
+mkdir -p $USER_HOME/.kube
+
+cp /etc/rancher/rke2/rke2.yaml $USER_HOME/.kube/config
+
+chown -R ${var.ssh_user}:${var.ssh_user} $USER_HOME/.kube
+chmod 600 $USER_HOME/.kube/config
+
+# 4. Make kubectl global
+until [ -f /var/lib/rancher/rke2/bin/kubectl ]; do
+  sleep 2
+done
+
+ln -sf /var/lib/rancher/rke2/bin/kubectl /usr/local/bin/kubectl
+
+#docker
+apt-get update -y
+apt-get install -y ca-certificates curl gnupg lsb-release
+
+mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+  > /etc/apt/sources.list.d/docker.list
+
+apt-get update -y
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+systemctl enable docker
+systemctl start docker
+
+# Run Rancher container
+docker run -d \
+  --restart=unless-stopped \
+  --name rancher \
+  -p 8443:443 \
+  --privileged \
+  rancher/rancher:latest
+EOF
 }
+
 
 resource "google_compute_instance" "worker" {
   count        = var.worker_count
-  name         = "vm-rke2-worker-${count.index}"
+  name         = "vm-rke2-worker-2912-${count.index}"
   machine_type = var.worker_machine_type
   zone         = var.zone
 
@@ -103,7 +153,7 @@ resource "google_compute_instance" "worker" {
 
     mkdir -p /etc/rancher/rke2
     cat <<EOT > /etc/rancher/rke2/config.yaml
-    server: https://${MASTER_IP}:9345
+    server: https://${google_compute_instance.master[0].network_interface[0].network_ip}:9345
     token: ${var.rke2_token}
     EOT
 
